@@ -79,6 +79,7 @@ fi
 ############################
 # State
 ############################
+
 VERBOSE=1
 TOTAL_DRIVES=0
 UNLOCKED_DRIVES=0
@@ -89,6 +90,7 @@ declare -a UNLOCK_RESULTS=()
 ############################
 # Logging
 ############################
+
 # File log always includes timestamp + level; terminal output is colorized.
 _log_file() {
     local level="$1"; shift
@@ -110,6 +112,7 @@ log_step()  {
 ############################
 # Cleanup / signal handling
 ############################
+
 cleanup() {
     local rc=$?
     # Scrub any lingering passphrase env vars.
@@ -121,14 +124,15 @@ trap cleanup EXIT
 trap 'log_warn "Interrupted by signal — aborting."; exit 130' INT TERM
 
 ############################
-# Log file init
+# Initialize Log File 
 ############################
+
 init_log() {
     : > "$LOG_FILE" || { echo "ERROR: cannot write log file: $LOG_FILE" >&2; exit 1; }
     chmod 600 "$LOG_FILE" 2>/dev/null || true
     {
-        echo "================================================================"
-        echo " nvme-opal-unlock"
+        echo ""
+        echo "================================================================"        
         echo " Started : $(date -Iseconds 2>/dev/null || date)"
         echo " Host    : $(hostname 2>/dev/null || echo unknown)"
         echo " Kernel  : $(uname -srm 2>/dev/null || echo unknown)"
@@ -141,8 +145,9 @@ init_log() {
 }
 
 ############################
-# Preflight
+# System Requirements Check 
 ############################
+
 require_tool() {
     local tool="$1" pkg_hint="$2"
     if ! command -v "$tool" >/dev/null 2>&1; then
@@ -154,7 +159,7 @@ require_tool() {
 }
 
 preflight() {
-    log_step "Preflight checks"
+    log_step "System requirement checks"
 
     if [[ $EUID -ne 0 ]]; then
         log_error "This script must be run as root (current uid=$EUID). Try: sudo $SCRIPT_NAME"
@@ -189,6 +194,7 @@ preflight() {
 ############################
 # Device enumeration
 ############################
+
 enumerate_devices() {
     local -a devs=()
 
@@ -230,6 +236,7 @@ enumerate_devices() {
 #   1 = drive is confirmed unlocked
 #   2 = drive does not support SED/Opal
 ############################
+
 sed_state() {
     local device="$1"
     local out rc
@@ -262,6 +269,7 @@ sed_state() {
 ############################
 # Passphrase prompt (reads from /dev/tty so stdin redirection is OK).
 ############################
+
 prompt_passphrase() {
     local device="$1"
     local pass=""
@@ -283,6 +291,7 @@ prompt_passphrase() {
 #   1 - unlock failed (wrong passphrase / Opal error)
 #   2 - tool/spawn/timeout failure
 ############################
+
 attempt_unlock() {
     local device="$1"
     local passphrase="$2"
@@ -342,6 +351,7 @@ EXPECT_EOF
 
     # Mirror nvme's output into the debug log. The passphrase itself is never
     # echoed by getpass() and is not sent through expect's stdout.
+
     while IFS= read -r line; do
         [[ -z "$line" ]] && continue
         log_debug "nvme: $line"
@@ -372,6 +382,7 @@ EXPECT_EOF
 #   1 - drive skipped (tool error, user skip)
 #   2 - user aborted the whole run
 ############################
+
 unlock_drive() {
     local device="$1"
     local pass_ref="$2"
@@ -445,6 +456,7 @@ unlock_drive() {
 ############################
 # Help
 ############################
+
 usage() {
     cat <<USAGE
 $SCRIPT_NAME — Unlock TCG Opal 2.0 NVMe drives via nvme-cli
